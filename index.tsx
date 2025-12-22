@@ -19,7 +19,7 @@ interface CartItem extends Product {
   quantity: number;
 }
 
-const PRODUCTS: Product[] = [
+const INITIAL_PRODUCTS: Product[] = [
   { id: '1', nameAr: 'ساعة ذكية برو 2025', description: 'شاشة AMOLED، تتبع الصحة، وبطارية تدوم طويلاً.', price: 499, oldPrice: 799, category: 'إلكترونيات', image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=400&auto=format&fit=crop' },
   { id: '2', nameAr: 'حقيبة يد جلدية فاخرة', description: 'صناعة يدوية من الجلد الطبيعي المغربي.', price: 350, category: 'موضة', image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=400&auto=format&fit=crop' },
   { id: '3', nameAr: 'زيت أركان أصلي 100%', description: 'مستخلص طبيعي للشعر والبشرة من تعاونيات سوس.', price: 120, oldPrice: 150, category: 'منتجات تقليدية', image: 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?q=80&w=400&auto=format&fit=crop' },
@@ -32,7 +32,8 @@ const CATEGORIES = ['الكل', 'إلكترونيات', 'موضة', 'منزل', 
 
 // --- المكونات الفرعية ---
 
-const ProductCard = ({ product, onAdd }: { product: Product, onAdd: (p: Product) => void }) => (
+// Fix: Use React.FC to properly handle intrinsic props like 'key' in TypeScript
+const ProductCard: React.FC<{ product: Product, onAdd: (p: Product) => void }> = ({ product, onAdd }) => (
   <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden group hover:shadow-md transition-all duration-300">
     <div className="relative aspect-square overflow-hidden bg-gray-100">
       <img src={product.image} alt={product.nameAr} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -61,6 +62,7 @@ const ProductCard = ({ product, onAdd }: { product: Product, onAdd: (p: Product)
 // --- التطبيق الرئيسي ---
 
 const App = () => {
+  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
@@ -71,9 +73,25 @@ const App = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // منطق لوحة التحكم
+  const [adminClickCount, setAdminClickCount] = useState(0);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [newProduct, setNewProduct] = useState<Partial<Product>>({ category: 'إلكترونيات' });
+
+  useEffect(() => {
+    if (adminClickCount === 5) {
+      setShowAdminLogin(true);
+      setAdminClickCount(0);
+    }
+    const timer = setTimeout(() => setAdminClickCount(0), 2000);
+    return () => clearTimeout(timer);
+  }, [adminClickCount]);
+
   const filteredProducts = useMemo(() => 
-    category === 'الكل' ? PRODUCTS : PRODUCTS.filter(p => p.category === category)
-  , [category]);
+    category === 'الكل' ? products : products.filter(p => p.category === category)
+  , [category, products]);
 
   const addToCart = (product: Product) => {
     setCart(prev => {
@@ -95,8 +113,9 @@ const App = () => {
     setLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-      const productsStr = PRODUCTS.map(p => `${p.nameAr} (${p.price} درهم)`).join(', ');
+      // Fix: Initialize GoogleGenAI with direct process.env.API_KEY as per instructions
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const productsStr = products.map(p => `${p.nameAr} (${p.price} درهم)`).join(', ');
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `أنت مساعد متجر "Matjar Maroc". الزبون يسأل: ${userMsg}. 
@@ -111,13 +130,185 @@ const App = () => {
     }
   };
 
+  const handleAdminLogin = () => {
+    if (adminPassword === 'maroc2025') {
+      setIsAdminLoggedIn(true);
+      setShowAdminLogin(false);
+      setAdminPassword('');
+    } else {
+      alert('كلمة السر خاطئة!');
+    }
+  };
+
+  const deleteProduct = (id: string) => {
+    setProducts(prev => prev.filter(p => p.id !== id));
+  };
+
+  const handleAddProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    const id = Math.random().toString(36).substr(2, 9);
+    const productToAdd = { 
+      ...newProduct, 
+      id, 
+      price: Number(newProduct.price) || 0,
+      image: newProduct.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=400&auto=format&fit=crop'
+    } as Product;
+    setProducts(prev => [productToAdd, ...prev]);
+    setNewProduct({ category: 'إلكترونيات' });
+    alert('تم إضافة المنتج بنجاح!');
+  };
+
+  // واجهة المسؤول (Admin Panel Overlay)
+  if (isAdminLoggedIn) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex flex-col font-sans">
+        <header className="bg-slate-900 text-white p-4 shadow-lg flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-black tracking-widest text-emerald-400 underline decoration-2 underline-offset-4">لوحة تحكم المسؤول</h1>
+            <div className="flex gap-4 text-xs opacity-70">
+              <span>إجمالي المنتجات: {products.length}</span>
+              <span>الطلبات النشطة: 12</span>
+            </div>
+          </div>
+          <button 
+            onClick={() => setIsAdminLoggedIn(false)}
+            className="bg-red-500/20 hover:bg-red-500 text-red-100 px-4 py-1 rounded text-sm transition-all"
+          >
+            تسجيل الخروج
+          </button>
+        </header>
+        
+        <main className="container mx-auto p-6 flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* إحصائيات سريعة */}
+          <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-xl shadow-sm border-r-4 border-emerald-500">
+              <p className="text-gray-500 text-xs">إجمالي المبيعات (اليوم)</p>
+              <h4 className="text-xl font-black">4,520 درهم</h4>
+            </div>
+            <div className="bg-white p-4 rounded-xl shadow-sm border-r-4 border-blue-500">
+              <p className="text-gray-500 text-xs">الطلبات الجديدة</p>
+              <h4 className="text-xl font-black">24 طلب</h4>
+            </div>
+            <div className="bg-white p-4 rounded-xl shadow-sm border-r-4 border-amber-500">
+              <p className="text-gray-500 text-xs">زوار الموقع اليوم</p>
+              <h4 className="text-xl font-black">1,120 زائر</h4>
+            </div>
+            <div className="bg-white p-4 rounded-xl shadow-sm border-r-4 border-purple-500">
+              <p className="text-gray-500 text-xs">نسبة التحويل</p>
+              <h4 className="text-xl font-black">3.2%</h4>
+            </div>
+          </div>
+
+          {/* إضافة منتج جديد */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm h-fit">
+            <h3 className="font-bold mb-6 text-gray-800 border-b pb-2">إضافة منتج جديد</h3>
+            <form onSubmit={handleAddProduct} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">اسم المنتج</label>
+                <input 
+                  required
+                  type="text" 
+                  value={newProduct.nameAr || ''} 
+                  onChange={e => setNewProduct({...newProduct, nameAr: e.target.value})}
+                  className="w-full bg-gray-50 border rounded-lg p-2 text-sm outline-emerald-500" 
+                  placeholder="مثال: قفطان ملكي" 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1">السعر (MAD)</label>
+                  <input 
+                    required
+                    type="number" 
+                    value={newProduct.price || ''} 
+                    onChange={e => setNewProduct({...newProduct, price: Number(e.target.value)})}
+                    className="w-full bg-gray-50 border rounded-lg p-2 text-sm outline-emerald-500" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1">الفئة</label>
+                  <select 
+                    value={newProduct.category} 
+                    onChange={e => setNewProduct({...newProduct, category: e.target.value})}
+                    className="w-full bg-gray-50 border rounded-lg p-2 text-sm outline-emerald-500"
+                  >
+                    {CATEGORIES.slice(1).map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">رابط الصورة</label>
+                <input 
+                  type="text" 
+                  value={newProduct.image || ''} 
+                  onChange={e => setNewProduct({...newProduct, image: e.target.value})}
+                  className="w-full bg-gray-50 border rounded-lg p-2 text-sm outline-emerald-500" 
+                  placeholder="https://..." 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">الوصف</label>
+                <textarea 
+                  value={newProduct.description || ''} 
+                  onChange={e => setNewProduct({...newProduct, description: e.target.value})}
+                  className="w-full bg-gray-50 border rounded-lg p-2 text-sm outline-emerald-500 h-20"
+                />
+              </div>
+              <button className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-emerald-700 transition-all">إضافة المنتج للكتالوج</button>
+            </form>
+          </div>
+
+          {/* قائمة المنتجات الحالية */}
+          <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col">
+            <h3 className="font-bold p-6 bg-gray-50 border-b text-gray-800">إدارة الكتالوج الحالي</h3>
+            <div className="flex-1 overflow-y-auto max-h-[600px]">
+              <table className="w-full text-right">
+                <thead className="bg-gray-50 text-xs text-gray-500 sticky top-0">
+                  <tr>
+                    <th className="p-4">المنتج</th>
+                    <th className="p-4">الفئة</th>
+                    <th className="p-4">السعر</th>
+                    <th className="p-4">الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {products.map(p => (
+                    <tr key={p.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="p-4 flex items-center gap-3">
+                        <img src={p.image} className="w-10 h-10 rounded object-cover border" />
+                        <span className="font-bold text-sm text-gray-700">{p.nameAr}</span>
+                      </td>
+                      <td className="p-4 text-xs text-gray-500">{p.category}</td>
+                      <td className="p-4 font-bold text-sm">{p.price} MAD</td>
+                      <td className="p-4">
+                        <button 
+                          onClick={() => deleteProduct(p.id)}
+                          className="text-red-400 hover:text-red-600 text-xs font-bold underline"
+                        >حذف</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 antialiased">
       {/* Navigation */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="text-2xl font-black text-emerald-600 tracking-tighter">MATJAR MAROC</div>
+            <div 
+              onClick={() => setAdminClickCount(prev => prev + 1)}
+              className="text-2xl font-black text-emerald-600 tracking-tighter cursor-pointer select-none"
+            >
+              MATJAR MAROC
+            </div>
             <nav className="hidden md:flex gap-6 text-sm font-bold text-gray-500">
               <a href="#" className="text-emerald-600">الرئيسية</a>
               <a href="#" className="hover:text-emerald-600 transition">أحدث العروض</a>
@@ -174,6 +365,32 @@ const App = () => {
           {filteredProducts.map(p => <ProductCard key={p.id} product={p} onAdd={addToCart} />)}
         </div>
       </main>
+
+      {/* Admin Login Modal (Hidden trigger) */}
+      {showAdminLogin && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowAdminLogin(false)} />
+          <div className="relative bg-white p-8 rounded-3xl shadow-2xl w-full max-w-xs text-center">
+            <h2 className="text-xl font-black mb-4">الدخول للإدارة</h2>
+            <p className="text-xs text-gray-500 mb-6">يرجى إدخال رمز التحقق للوصول إلى لوحة التحكم</p>
+            <input 
+              type="password" 
+              value={adminPassword}
+              onChange={e => setAdminPassword(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleAdminLogin()}
+              placeholder="••••••••"
+              className="w-full bg-gray-50 border rounded-xl p-3 text-center mb-4 tracking-[0.5em] outline-emerald-500"
+              autoFocus
+            />
+            <button 
+              onClick={handleAdminLogin}
+              className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition-all"
+            >
+              تأكيد الدخول
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Cart Sidebar */}
       {isCartOpen && (

@@ -2,7 +2,8 @@
 import { GoogleGenAI } from "@google/genai";
 import { PRODUCTS } from "../constants";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+// Fix: Initialize GoogleGenAI with direct process.env.API_KEY as per instructions
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const getShoppingAdvice = async (userPrompt: string, cartItems: any[]) => {
   try {
