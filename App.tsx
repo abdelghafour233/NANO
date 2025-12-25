@@ -1,98 +1,55 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import Header from './components/Header';
-import ProductCard from './components/ProductCard';
-import CartDrawer from './components/CartDrawer';
+import ArticleCard from './components/ArticleCard';
 import AssistantModal from './components/AssistantModal';
-import { PRODUCTS as INITIAL_PRODUCTS } from './constants';
-import { Product, CartItem, Category } from './types';
-
-const CATEGORY_MAP: Record<string, string> = {
-  'Electronics': 'إلكترونيات',
-  'Fashion': 'موضة وأزياء',
-  'Home & Kitchen': 'المنزل والمطبخ',
-  'Beauty & Health': 'الجمال والصحة',
-  'Traditional Moroccan': 'منتجات تقليدية'
-};
-
-const MOROCCAN_CITIES = [
-  'الدار البيضاء', 'الرباط', 'مراكش', 'فاس', 'طنجة', 'أغادير', 'مكناس', 
-  'وجدة', 'القنيطرة', 'تطوان', 'تمارة', 'آسفي', 'العيون', 'المحمدية'
-];
-
-interface Order {
-  id: string;
-  customerName: string;
-  phone: string;
-  city: string;
-  items: CartItem[];
-  total: number;
-  date: string;
-}
+import { ARTICLES as INITIAL_ARTICLES } from './constants';
+import { Article, BlogCategory } from './types';
 
 const App: React.FC = () => {
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [articles, setArticles] = useState<Article[]>(INITIAL_ARTICLES);
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<Category | 'All'>('All');
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<BlogCategory | 'All'>('All');
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return localStorage.getItem('theme') === 'dark';
+  });
 
-  // منطق الإدارة
+  // Admin States
   const [clickCount, setClickCount] = useState(0);
   const [showAdminAuth, setShowAdminAuth] = useState(false);
   const [adminPass, setAdminPass] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [adminTab, setAdminTab] = useState<'products' | 'orders'>('products');
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-
-  // نموذج الطلب
-  const [checkoutData, setCheckoutData] = useState({ fullName: '', phone: '', city: MOROCCAN_CITIES[0] });
-  const [isProcessingOrder, setIsProcessingOrder] = useState(false);
+  const [editingArticle, setEditingArticle] = useState<Article | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setClickCount(0), 5000);
-    return () => clearTimeout(timer);
-  }, [clickCount]);
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
 
-  const filteredProducts = useMemo(() => {
-    if (activeCategory === 'All') return products;
-    return products.filter(p => p.category === activeCategory);
-  }, [activeCategory, products]);
-
-  const addToCart = (product: Product) => {
-    setCartItems(prev => {
-      const existing = prev.find(item => item.id === product.id);
-      if (existing) {
-        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
-      }
-      return [...prev, { ...product, quantity: 1 }];
-    });
-    setIsCartOpen(true);
-  };
-
-  const removeCartItem = (id: string) => {
-    setCartItems(prev => prev.filter(item => item.id !== id));
-  };
-
-  const updateQuantity = (id: string, q: number) => {
-    setCartItems(prev => prev.map(item => item.id === id ? { ...item, quantity: q } : item));
-  };
+  const filteredArticles = useMemo(() => {
+    if (activeCategory === 'All') return articles;
+    return articles.filter(a => a.category === activeCategory);
+  }, [activeCategory, articles]);
 
   const handleLogoClick = () => {
-    const next = clickCount + 1;
-    if (next === 5) {
-      setShowAdminAuth(true);
-      setClickCount(0);
-    } else {
-      setClickCount(next);
-    }
+    setClickCount(prev => {
+      const next = prev + 1;
+      if (next === 5) {
+        setShowAdminAuth(true);
+        return 0;
+      }
+      return next;
+    });
   };
 
   const loginAdmin = () => {
-    if (adminPass === 'maroc2025') {
+    if (adminPass === 'abdou2025') {
       setIsAdmin(true);
       setShowAdminAuth(false);
       setAdminPass('');
@@ -101,135 +58,51 @@ const App: React.FC = () => {
     }
   };
 
-  const handleCheckout = (e: React.FormEvent) => {
+  const handleUpdateArticle = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsProcessingOrder(true);
-    
-    setTimeout(() => {
-      const orderId = 'MM-' + Math.floor(Math.random() * 1000000);
-      const total = cartItems.reduce((a, b) => a + (b.price * b.quantity), 0);
-      
-      const newOrder: Order = {
-        id: orderId,
-        customerName: checkoutData.fullName,
-        phone: checkoutData.phone,
-        city: checkoutData.city,
-        items: [...cartItems],
-        total: total,
-        date: new Date().toLocaleString('ar-MA')
-      };
-
-      setOrders(prev => [newOrder, ...prev]);
-      setOrderSuccess(orderId);
-      setIsProcessingOrder(false);
-      setIsCheckoutOpen(false);
-      setCartItems([]);
-      setCheckoutData({ fullName: '', phone: '', city: MOROCCAN_CITIES[0] });
-    }, 1500);
+    if (!editingArticle) return;
+    if (articles.find(a => a.id === editingArticle.id)) {
+      setArticles(articles.map(a => a.id === editingArticle.id ? editingArticle : a));
+    } else {
+      setArticles([editingArticle, ...articles]);
+    }
+    setEditingArticle(null);
   };
 
-  const handleUpdateProduct = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingProduct) return;
-    setProducts(products.map(p => p.id === editingProduct.id ? editingProduct : p));
-    setEditingProduct(null);
-    alert('تم التحديث بنجاح');
-  };
-
-  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-
-  // --- واجهة المسؤول ---
   if (isAdmin) {
     return (
-      <div className="min-h-screen bg-slate-100 font-sans text-right flex flex-col" dir="rtl">
-        <header className="bg-slate-900 text-white p-4 flex justify-between items-center shadow-lg sticky top-0 z-50">
-          <div className="flex items-center gap-6">
-            <h1 className="text-xl font-black text-emerald-400">لوحة تحكم الإدارة</h1>
-            <nav className="flex gap-2">
-              <button onClick={() => setAdminTab('products')} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition ${adminTab === 'products' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'}`}>إدارة المنتجات</button>
-              <button onClick={() => setAdminTab('orders')} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition ${adminTab === 'orders' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'}`}>الطلبيات ({orders.length})</button>
-            </nav>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-right flex flex-col transition-colors duration-500" dir="rtl">
+        <header className="bg-slate-900 text-white p-6 flex justify-between items-center sticky top-0 z-50">
+          <h1 className="text-xl font-black">لوحة تحكم عبدو ويب</h1>
+          <div className="flex gap-4">
+            <button 
+              onClick={() => setEditingArticle({ id: Date.now().toString(), title: '', excerpt: '', content: '', author: 'AbdouWeb', date: new Date().toLocaleDateString('ar-MA'), category: BlogCategory.TECH, image: '', readTime: '5 دقائق' })}
+              className="bg-emerald-500 px-4 py-2 rounded-lg text-sm font-bold"
+            >+ مقال جديد</button>
+            <button onClick={() => setIsAdmin(false)} className="bg-red-500 px-4 py-2 rounded-lg text-sm font-bold">خروج</button>
           </div>
-          <button onClick={() => setIsAdmin(false)} className="bg-red-500 hover:bg-red-600 px-4 py-1.5 rounded-lg text-xs font-bold transition">خروج</button>
         </header>
-
-        <main className="container mx-auto p-6 flex-1">
-          {adminTab === 'products' ? (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-black text-slate-800">المنتجات والأسعار</h2>
-                <button 
-                  onClick={() => {
-                    // Added missing 'name' property to satisfy the Product interface requirement
-                    const newP: Product = { id: Date.now().toString(), name: 'New Product', nameAr: 'منتج جديد', description: '', price: 0, category: Category.ELECTRONICS, image: 'https://picsum.photos/200', rating: 5, reviews: 0 };
-                    setProducts([newP, ...products]);
-                    setEditingProduct(newP);
-                  }}
-                  className="bg-emerald-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-emerald-700 shadow-md transition"
-                >+ إضافة منتج</button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {products.map(p => (
-                  <div key={p.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex gap-4 items-center">
-                    <img src={p.image} className="w-16 h-16 rounded-xl object-cover border" alt="" />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-slate-800 truncate text-sm">{p.nameAr}</h4>
-                      <p className="text-emerald-600 font-black text-xs">{p.price} MAD</p>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <button onClick={() => setEditingProduct(p)} className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition text-xs font-bold">تعديل</button>
-                      <button onClick={() => setProducts(products.filter(x => x.id !== p.id))} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition text-xs font-bold">حذف</button>
-                    </div>
-                  </div>
-                ))}
+        <main className="p-8 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {articles.map(a => (
+            <div key={a.id} className="bg-white dark:bg-slate-800 p-4 rounded-2xl border dark:border-slate-700 shadow-sm">
+              <img src={a.image} className="w-full h-32 object-cover rounded-xl mb-4" alt="" />
+              <h3 className="font-bold text-sm mb-4 line-clamp-2 dark:text-white">{a.title}</h3>
+              <div className="flex gap-2">
+                <button onClick={() => setEditingArticle(a)} className="flex-1 bg-blue-500 text-white py-2 rounded-lg text-xs">تعديل</button>
+                <button onClick={() => setArticles(articles.filter(x => x.id !== a.id))} className="bg-red-500 text-white p-2 rounded-lg">🗑️</button>
               </div>
             </div>
-          ) : (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-black text-slate-800">سجل الطلبيات</h2>
-              <div className="bg-white rounded-3xl shadow-sm border overflow-hidden">
-                <table className="w-full text-right border-collapse">
-                  <thead className="bg-slate-50 border-b">
-                    <tr>
-                      <th className="p-4 text-xs font-bold text-slate-400 uppercase">الزبون / الهاتف</th>
-                      <th className="p-4 text-xs font-bold text-slate-400 uppercase">المدينة</th>
-                      <th className="p-4 text-xs font-bold text-slate-400 uppercase">المنتجات</th>
-                      <th className="p-4 text-xs font-bold text-slate-400 uppercase">المجموع</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {orders.length === 0 ? (
-                      <tr><td colSpan={4} className="p-20 text-center text-slate-300 font-bold">لا توجد طلبيات بعد.</td></tr>
-                    ) : orders.map(order => (
-                      <tr key={order.id} className="hover:bg-slate-50 transition">
-                        <td className="p-4">
-                          <div className="font-bold text-slate-800 text-sm">{order.customerName}</div>
-                          <div className="text-xs text-slate-500" dir="ltr">{order.phone}</div>
-                        </td>
-                        <td className="p-4 text-sm">{order.city}</td>
-                        <td className="p-4 text-[10px] text-slate-600 max-w-xs">{order.items.map(i => `${i.nameAr} (${i.quantity})`).join('، ')}</td>
-                        <td className="p-4 font-black text-emerald-600">{order.total} MAD</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+          ))}
         </main>
-
-        {editingProduct && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
-            <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
-              <div className="p-5 bg-slate-900 text-white flex justify-between items-center">
-                <h3 className="font-bold">تعديل المنتج</h3>
-                <button onClick={() => setEditingProduct(null)}>✕</button>
-              </div>
-              <form onSubmit={handleUpdateProduct} className="p-6 space-y-4">
-                <input className="w-full border rounded-xl p-3 text-sm outline-none" placeholder="اسم المنتج" value={editingProduct.nameAr} onChange={e => setEditingProduct({...editingProduct, nameAr: e.target.value})} />
-                <input type="number" className="w-full border rounded-xl p-3 text-sm outline-none" placeholder="السعر" value={editingProduct.price} onChange={e => setEditingProduct({...editingProduct, price: Number(e.target.value)})} />
-                <input className="w-full border rounded-xl p-3 text-sm outline-none" placeholder="رابط الصورة" value={editingProduct.image} onChange={e => setEditingProduct({...editingProduct, image: e.target.value})} />
-                <button type="submit" className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold hover:bg-emerald-700 transition">حفظ</button>
+        {editingArticle && (
+          <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl p-8 max-h-[90vh] overflow-y-auto">
+              <h2 className="text-2xl font-black mb-6 dark:text-white">تحرير المحتوى</h2>
+              <form onSubmit={handleUpdateArticle} className="space-y-4">
+                <input className="w-full border p-4 rounded-xl dark:bg-slate-800 dark:border-slate-700 dark:text-white" placeholder="العنوان" value={editingArticle.title} onChange={e => setEditingArticle({...editingArticle, title: e.target.value})} />
+                <textarea className="w-full border p-4 rounded-xl dark:bg-slate-800 dark:border-slate-700 dark:text-white" placeholder="المحتوى" rows={8} value={editingArticle.content} onChange={e => setEditingArticle({...editingArticle, content: e.target.value})} />
+                <button type="submit" className="w-full bg-emerald-500 text-white py-4 rounded-xl font-black">حفظ</button>
+                <button type="button" onClick={() => setEditingArticle(null)} className="w-full text-gray-500">إلغاء</button>
               </form>
             </div>
           </div>
@@ -238,113 +111,105 @@ const App: React.FC = () => {
     );
   }
 
-  // --- واجهة الزبون ---
   return (
-    <div className="min-h-screen flex flex-col text-right bg-gray-50">
-      <div className="sticky top-0 z-40 bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-           <div 
-            onClick={handleLogoClick}
-            className="text-2xl font-black text-emerald-600 cursor-pointer select-none tracking-tight"
-          >
-            MATJAR MAROC
+    <div className="min-h-screen flex flex-col text-right transition-colors duration-500">
+      {/* Navigation */}
+      <nav className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b dark:border-slate-800">
+        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
+          <div onClick={handleLogoClick} className="flex items-center gap-3 cursor-pointer group">
+            <div className="w-10 h-10 bg-emerald-600 text-white rounded-xl flex items-center justify-center font-black text-xl">A</div>
+            <span className="text-2xl font-black tracking-tighter dark:text-white">ABDOUWEB</span>
           </div>
-          <div className="flex items-center gap-4">
-            <button onClick={() => setIsAssistantOpen(true)} className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full text-sm font-semibold hover:bg-emerald-100 transition">
-              <span className="hidden sm:inline">المساعد الذكي</span> 🤖
+          
+          <div className="hidden lg:flex items-center gap-4">
+            <button onClick={() => setActiveCategory('All')} className={`px-4 py-2 text-xs font-bold rounded-lg ${activeCategory === 'All' ? 'bg-emerald-600 text-white' : 'dark:text-slate-400'}`}>الكل</button>
+            {Object.values(BlogCategory).map(c => (
+              <button key={c} onClick={() => setActiveCategory(c)} className={`px-4 py-2 text-xs font-bold rounded-lg ${activeCategory === c ? 'bg-emerald-600 text-white' : 'dark:text-slate-400'}`}>{c}</button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl dark:text-emerald-400">
+              {isDarkMode ? '🌞' : '🌙'}
             </button>
-            <button onClick={() => setIsCartOpen(true)} className="relative p-2 text-gray-600 hover:text-emerald-600 transition">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
-              {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full">{cartCount}</span>}
-            </button>
+            <button onClick={() => setIsAssistantOpen(true)} className="p-3 bg-emerald-600 text-white rounded-xl">🤖</button>
           </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Hero Section */}
-      <section className="relative h-[400px] flex items-center justify-center text-center px-4">
-        <div className="absolute inset-0 bg-emerald-900 overflow-hidden">
-          <img src="https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=2070" className="w-full h-full object-cover opacity-40" alt="" />
-        </div>
-        <div className="relative z-10 max-w-2xl">
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">اكتشف أفضل ما في المغرب</h1>
-          <p className="text-lg text-emerald-50 mb-8 opacity-90 leading-relaxed">من أحدث التقنيات إلى الحرف التقليدية الأصيلة. توصيل سريع لكل أنحاء المملكة.</p>
-        </div>
-      </section>
+      {/* Featured */}
+      {activeCategory === 'All' && articles[0] && (
+        <header className="container mx-auto px-6 pt-8">
+          <div onClick={() => setSelectedArticle(articles[0])} className="relative h-[500px] rounded-[40px] overflow-hidden cursor-pointer group shadow-2xl">
+            <img src={articles[0].image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+            <div className="absolute bottom-12 right-12 left-12">
+              <span className="bg-emerald-500 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase mb-4 inline-block">{articles[0].category}</span>
+              <h1 className="text-4xl md:text-6xl font-black text-white mb-6 leading-tight max-w-4xl">{articles[0].title}</h1>
+              <p className="text-white/70 line-clamp-2 max-w-2xl">{articles[0].excerpt}</p>
+            </div>
+          </div>
+        </header>
+      )}
 
-      {/* Main Content */}
-      <main className="flex-1 container mx-auto px-4 py-12">
-        <div className="mb-8 flex items-center gap-2 overflow-x-auto pb-4 no-scrollbar flex-row-reverse">
-          <button onClick={() => setActiveCategory('All')} className={`px-6 py-2 rounded-full text-sm font-bold transition whitespace-nowrap ${activeCategory === 'All' ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 border'}`}>كل المنتجات</button>
-          {Object.values(Category).map((cat) => (
-            <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-6 py-2 rounded-full text-sm font-bold transition whitespace-nowrap ${activeCategory === cat ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 border'}`}>
-              {CATEGORY_MAP[cat] || cat}
-            </button>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} onAddToCart={addToCart} />
+      {/* Articles Grid */}
+      <main className="container mx-auto px-6 py-16">
+        <h2 className="text-3xl font-black mb-12 dark:text-white">آخر المستجدات</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {filteredArticles.map(a => (
+            <ArticleCard key={a.id} article={a} onClick={() => setSelectedArticle(a)} />
           ))}
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-white border-t py-12 text-center text-gray-400">
-        <p className="font-bold text-emerald-600 mb-2">MATJAR MAROC</p>
-        <p className="text-xs">© {new Date().getFullYear()} جميع الحقوق محفوظة لمتجر المغرب</p>
+      <footer className="bg-white dark:bg-slate-950 border-t dark:border-slate-800 py-20 text-center transition-colors">
+        <h2 className="text-3xl font-black mb-4 dark:text-white tracking-widest">ABDOUWEB</h2>
+        <p className="text-slate-400 text-sm max-w-md mx-auto mb-10">منصة مغربية رائدة في المحتوى التقني والمراجعات الرقمية.</p>
+        <button onClick={() => setShowAdminAuth(true)} className="text-[10px] font-bold opacity-30 hover:opacity-100 dark:text-white">بوابة التحرير</button>
       </footer>
 
-      {/* Modals & UI Components */}
-      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} items={cartItems} onRemove={removeCartItem} onUpdateQuantity={updateQuantity} onCheckout={() => { setIsCartOpen(false); setIsCheckoutOpen(true); }} />
-      <AssistantModal isOpen={isAssistantOpen} onClose={() => setIsAssistantOpen(false)} cartItems={cartItems} />
-
-      {/* Checkout Modal */}
-      {isCheckoutOpen && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
-            <div className="bg-white w-full max-w-md rounded-[40px] shadow-2xl overflow-hidden">
-                <div className="p-8 bg-emerald-600 text-white flex justify-between items-center">
-                    <h2 className="text-2xl font-black">تفاصيل التوصيل</h2>
-                    <button onClick={() => setIsCheckoutOpen(false)} className="text-2xl">✕</button>
-                </div>
-                <form onSubmit={handleCheckout} className="p-8 space-y-6">
-                    <input required className="w-full border-2 border-slate-100 rounded-2xl p-4 text-sm outline-none font-bold" placeholder="الاسم الكامل" onChange={e => setCheckoutData({...checkoutData, fullName: e.target.value})} />
-                    <input required type="tel" className="w-full border-2 border-slate-100 rounded-2xl p-4 text-sm outline-none font-bold text-left" dir="ltr" placeholder="06 .. .. .. .." onChange={e => setCheckoutData({...checkoutData, phone: e.target.value})} />
-                    <select required className="w-full border-2 border-slate-100 rounded-2xl p-4 text-sm outline-none font-bold appearance-none text-right" onChange={e => setCheckoutData({...checkoutData, city: e.target.value})}>
-                      {MOROCCAN_CITIES.map(city => <option key={city} value={city}>{city}</option>)}
-                    </select>
-                    <button disabled={isProcessingOrder} type="submit" className="w-full py-5 rounded-[22px] font-black text-xl transition-all bg-emerald-600 text-white hover:bg-emerald-700 shadow-xl shadow-emerald-200">
-                        {isProcessingOrder ? 'جاري تسجيل الطلب...' : 'تأكيد الطلب الآن'}
-                    </button>
-                </form>
+      {/* Article Modal */}
+      {selectedArticle && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 lg:p-12 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-5xl rounded-[40px] overflow-hidden shadow-2xl animate-slide-in my-auto">
+            <div className="relative h-80 lg:h-[500px]">
+              <img src={selectedArticle.image} className="w-full h-full object-cover" />
+              <button onClick={() => setSelectedArticle(null)} className="absolute top-6 right-6 bg-white/20 backdrop-blur-md text-white w-10 h-10 rounded-full">✕</button>
             </div>
-        </div>
-      )}
-
-      {/* Order Success Modal */}
-      {orderSuccess && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 text-center">
-            <div className="bg-white p-10 rounded-[40px] shadow-2xl w-full max-w-sm">
-                <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">✓</div>
-                <h2 className="text-3xl font-black mb-3">شكراً لثقتكم!</h2>
-                <p className="text-sm text-slate-500 mb-8">تم تسجيل طلبكم بنجاح. رمز الطلب: {orderSuccess}</p>
-                <button onClick={() => setOrderSuccess(null)} className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black shadow-lg">إغلاق</button>
+            <div className="p-10 lg:p-20">
+              <div className="flex gap-4 mb-6 text-xs font-bold text-emerald-600">
+                <span>{selectedArticle.category}</span>
+                <span>•</span>
+                <span>{selectedArticle.date}</span>
+              </div>
+              <h2 className="text-4xl lg:text-5xl font-black mb-10 dark:text-white leading-tight">{selectedArticle.title}</h2>
+              <div className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed space-y-6 whitespace-pre-line">
+                {selectedArticle.content}
+              </div>
             </div>
-        </div>
-      )}
-
-      {/* Admin Auth Modal */}
-      {showAdminAuth && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 text-center">
-          <div className="bg-white p-10 rounded-[40px] shadow-2xl w-full max-w-xs">
-            <h2 className="text-2xl font-black mb-6 uppercase">الدخول السري</h2>
-            <input type="password" placeholder="••••••••" className="w-full border-2 rounded-2xl p-4 text-center mb-6 text-2xl outline-emerald-500 tracking-[0.5em] font-black" autoFocus onChange={e => setAdminPass(e.target.value)} onKeyDown={e => e.key === 'Enter' && loginAdmin()} />
-            <button onClick={loginAdmin} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black shadow-xl">دخول</button>
-            <button onClick={() => setShowAdminAuth(false)} className="mt-6 text-slate-300 text-xs font-bold hover:text-slate-500 transition">إلغاء</button>
           </div>
         </div>
       )}
+
+      {/* Login Modal */}
+      {showAdminAuth && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-xl p-6">
+          <div className="bg-white dark:bg-slate-900 p-12 rounded-[50px] w-full max-w-sm text-center">
+            <h2 className="text-2xl font-black mb-8 dark:text-white">تسجيل الدخول</h2>
+            <input 
+              type="password" 
+              className="w-full border-b-2 border-slate-200 dark:border-slate-700 bg-transparent p-4 text-center text-xl font-bold dark:text-white outline-none focus:border-emerald-500 mb-8"
+              placeholder="••••••••"
+              onChange={e => setAdminPass(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && loginAdmin()}
+            />
+            <button onClick={loginAdmin} className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black">تحقق</button>
+            <button onClick={() => setShowAdminAuth(false)} className="mt-6 text-xs text-slate-400">إلغاء</button>
+          </div>
+        </div>
+      )}
+
+      <AssistantModal isOpen={isAssistantOpen} onClose={() => setIsAssistantOpen(false)} cartItems={[]} />
     </div>
   );
 };

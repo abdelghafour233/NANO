@@ -1,33 +1,36 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { PRODUCTS } from "../constants";
+import { ARTICLES } from "../constants";
 
-// Fix: Initialize GoogleGenAI with direct process.env.API_KEY as per instructions
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-export const getShoppingAdvice = async (userPrompt: string, cartItems: any[]) => {
+export const getShoppingAdvice = async (userPrompt: string, _context: any[]) => {
   try {
-    const productsContext = PRODUCTS.map(p => `${p.nameAr} (${p.category}) - ${p.price} MAD`).join(', ');
-    const cartContext = cartItems.length > 0 
-      ? `المستخدم لديه حالياً ${cartItems.map(i => i.nameAr).join(', ')} في سلة التسوق.` 
-      : "سلة التسوق فارغة حالياً.";
+    const blogContext = ARTICLES.map(a => `${a.title} (تصنيف: ${a.category})`).join(', ');
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `أنت مساعد تسوق مغربي ودود لمتجر "Matjar Maroc". 
-      ساعد المستخدم في العثور على منتجات من الكتالوج الخاص بنا أو قدم له نصائح شرائية.
-      كتالوج المنتجات: ${productsContext}.
-      ${cartContext}
+      contents: `أنت "عبدو ويب بوت"، المساعد الذكي لمدونة AbdouWeb التقنية المغربية الرائدة.
+      
+      اختصاصك:
+      1. تقديم المشورة التقنية (هواتف، لابتوبات، برمجيات).
+      2. تلخيص أخبار المغرب التقنية والاقتصادية.
+      3. ترشيح مقالات من مدونتنا للمستخدم بناءً على سؤاله.
+      
+      مقالاتنا المتوفرة حالياً: ${blogContext}.
       
       طلب المستخدم: ${userPrompt}
       
-      يجب أن تكون إجابتك باللغة العربية بلهجة مهنية ومرحبة (مغربية إن أمكن ولكن مفهومة للجميع). 
-      اجعل الردود مختصرة ومفيدة وركز على بيع المنتجات الموجودة في الكتالوج.`
+      تعليمات الرد:
+      - تحدث باللغة العربية (يمكنك استخدام بعض المصطلحات المغربية التقنية الدارجة).
+      - كن محترفاً، ذكياً، ومختصراً.
+      - إذا سألك عن منتج غير موجود في قائمتنا، أعطه نصيحة عامة بناءً على خبرتك كخبير تقني.
+      - شجعه دائماً على متابعة جديد التكنولوجيا في المغرب عبر موقعنا.`
     });
 
-    return response.text || "عذراً، لم أتمكن من معالجة طلبك حالياً.";
+    return response.text || "عذراً، لم أتمكن من معالجة طلبك التقني حالياً. جرب مرة أخرى!";
   } catch (error) {
     console.error("Gemini API Error:", error);
-    return "المساعد الذكي غير متاح حالياً، يرجى المحاولة لاحقاً.";
+    return "المساعد الذكي يواجه عطلاً فنياً بسيطاً. سنعود قريباً!";
   }
 };
