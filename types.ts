@@ -15,8 +15,8 @@ export enum BlogCategory {
   TECH = 'تقنية وتكنولوجيا',
   MOROCCO = 'أخبار المغرب',
   PRODUCTS = 'مراجعات المنتجات',
-  STARTUPS = 'ستارتاب',
-  AI = 'ذكاء اصطناعي'
+  AFFILIATE = 'افلييت',
+  SELF_IMPROVEMENT = 'تطوير الذات'
 }
 
 export interface Message {
