@@ -5,6 +5,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AbdouWeb | عبدو ويب - بوابة التقنية والمحتوى المغربي</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="مدونة عبدو ويب بوابة المغرب الأولى للتقنية والتحول الرقمي وتطوير الذات. نغطي أخبار المغرب، مراجعات المنتجات، ودليلك للربح من الإنترنت.">
+    <meta name="keywords" content="تقنية، المغرب، تكنولوجيا، تطوير الذات، افلييت، الربح من الانترنت، عبدو ويب، AbdouWeb">
+    <meta name="author" content="AbdouWeb Team">
+    <link rel="canonical" href="https://abdouweb.ma" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="AbdouWeb | عبدو ويب - بوابة التقنية والمحتوى المغربي">
+    <meta property="og:description" content="اكتشف أحدث أخبار التقنية، مراجعات المنتجات، ونصائح تطوير الذات في المغرب.">
+    <meta property="og:image" content="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:title" content="AbdouWeb | عبدو ويب - بوابة التقنية والمحتوى المغربي">
+    <meta property="twitter:description" content="بوابة المغرب للتقنية وتطوير الذات.">
+    
+    <!-- Performance: Preconnect to external domains -->
+    <link rel="preconnect" href="https://images.unsplash.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -58,10 +81,10 @@
         .dark .glass-nav {
             background: rgba(5, 10, 21, 0.7);
         }
-        .gradient-text {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        /* Performance Optimization: Content visibility for lists */
+        .article-grid {
+            content-visibility: auto;
+            contain-intrinsic-size: 1000px;
         }
     </style>
 <script type="importmap">
