@@ -21,6 +21,11 @@ const App: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
+  const [adminTab, setAdminTab] = useState<'articles' | 'settings'>('articles');
+
+  // AdSense States
+  const [adsenseId, setAdsenseId] = useState(() => localStorage.getItem('adsense_id') || '');
+  const [isAdsEnabled, setIsAdsEnabled] = useState(() => localStorage.getItem('ads_enabled') === 'true');
 
   useEffect(() => {
     if (isDarkMode) {
@@ -31,6 +36,12 @@ const App: React.FC = () => {
       localStorage.setItem('theme', 'light');
     }
   }, [isDarkMode]);
+
+  const saveSettings = () => {
+    localStorage.setItem('adsense_id', adsenseId);
+    localStorage.setItem('ads_enabled', String(isAdsEnabled));
+    alert('تم حفظ الإعدادات بنجاح في عبدو ويب!');
+  };
 
   const filteredArticles = useMemo(() => {
     if (activeCategory === 'All') return articles;
@@ -76,7 +87,6 @@ const App: React.FC = () => {
     }
   };
 
-  // المكون المشترك لقارئ المقالات
   const ArticleReader = () => (
     selectedArticle && (
       <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 lg:p-12 overflow-y-auto">
@@ -107,61 +117,127 @@ const App: React.FC = () => {
             </div>
             <div>
               <h1 className="text-xl font-black dark:text-white uppercase">AbdouWeb Dashboard</h1>
-              <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">لوحة التحكم والمعاينة</p>
+              <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">إدارة المحتوى والإعلانات</p>
             </div>
           </div>
           
-          <div className="flex gap-3">
-            <button 
-              onClick={() => setEditingArticle({
-                id: Date.now().toString(),
-                title: '',
-                excerpt: '',
-                content: '',
-                author: 'عبدو ويب',
-                date: new Date().toLocaleDateString('ar-MA'),
-                category: BlogCategory.TECH,
-                image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200',
-                readTime: '5 دقائق'
-              })}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl text-sm font-black transition-all"
-            >
-              + مقال جديد
-            </button>
+          <div className="flex items-center gap-6">
+            <nav className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl">
+              <button 
+                onClick={() => setAdminTab('articles')}
+                className={`px-6 py-2 rounded-xl text-xs font-black transition-all ${adminTab === 'articles' ? 'bg-white dark:bg-slate-700 shadow-sm dark:text-white' : 'text-slate-400'}`}
+              >
+                المقالات
+              </button>
+              <button 
+                onClick={() => setAdminTab('settings')}
+                className={`px-6 py-2 rounded-xl text-xs font-black transition-all ${adminTab === 'settings' ? 'bg-white dark:bg-slate-700 shadow-sm dark:text-white' : 'text-slate-400'}`}
+              >
+                الإعدادات
+              </button>
+            </nav>
             <button 
               onClick={() => setIsAdmin(false)} 
-              className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-6 py-3 rounded-2xl text-sm font-black hover:bg-red-500 hover:text-white transition-all"
+              className="bg-red-50 dark:bg-red-500/10 text-red-500 px-6 py-2 rounded-2xl text-xs font-black hover:bg-red-500 hover:text-white transition-all"
             >
               خروج
             </button>
           </div>
         </header>
 
-        <main className="container mx-auto p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {articles.map(a => (
-            <div key={a.id} className="bg-white dark:bg-slate-900 rounded-[32px] overflow-hidden border dark:border-slate-800 shadow-sm flex flex-col group">
-              <div className="relative h-40">
-                <img src={a.image} className="h-full w-full object-cover" alt="" />
+        <main className="container mx-auto p-8">
+          {adminTab === 'articles' ? (
+            <div className="space-y-8">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-black dark:text-white">إدارة المقالات ({articles.length})</h2>
                 <button 
-                  onClick={() => setSelectedArticle(a)}
-                  className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
+                  onClick={() => setEditingArticle({
+                    id: Date.now().toString(),
+                    title: '',
+                    excerpt: '',
+                    content: '',
+                    author: 'عبدو ويب',
+                    date: new Date().toLocaleDateString('ar-MA'),
+                    category: BlogCategory.TECH,
+                    image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200',
+                    readTime: '5 دقائق'
+                  })}
+                  className="bg-emerald-600 text-white px-8 py-3 rounded-2xl font-black text-sm shadow-xl shadow-emerald-500/20"
                 >
-                  <span className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-full font-bold text-xs flex items-center gap-2">
-                    👁️ معاينة سريعة
-                  </span>
+                  + مقال جديد
                 </button>
               </div>
-              <div className="p-6 flex-1 flex flex-col">
-                <span className="text-[9px] font-black text-emerald-600 uppercase mb-2">{a.category}</span>
-                <h3 className="font-bold text-sm mb-6 line-clamp-2 dark:text-white">{a.title}</h3>
-                <div className="mt-auto flex gap-2 pt-4 border-t dark:border-slate-800">
-                  <button onClick={() => setEditingArticle(a)} className="flex-1 bg-slate-50 dark:bg-slate-800 py-3 rounded-xl text-xs font-black hover:bg-emerald-50 transition-colors">تعديل</button>
-                  <button onClick={() => setSelectedArticle(a)} className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl hover:bg-blue-50 transition-colors" title="رؤية ما كتب">👁️</button>
-                  <button onClick={() => deleteArticle(a.id)} className="bg-red-50 dark:bg-red-500/10 text-red-500 p-3 rounded-xl hover:bg-red-500 hover:text-white transition-colors">🗑️</button>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {articles.map(a => (
+                  <div key={a.id} className="bg-white dark:bg-slate-900 rounded-[32px] overflow-hidden border dark:border-slate-800 group shadow-sm">
+                    <div className="relative h-40">
+                      <img src={a.image} className="h-full w-full object-cover" alt="" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                         <button onClick={() => setSelectedArticle(a)} className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg" title="معاينة">👁️</button>
+                      </div>
+                    </div>
+                    <div className="p-6">
+                      <span className="text-[9px] font-black text-emerald-600 uppercase mb-2 block">{a.category}</span>
+                      <h3 className="font-bold text-sm mb-6 line-clamp-2 dark:text-white">{a.title}</h3>
+                      <div className="flex gap-2 pt-4 border-t dark:border-slate-800">
+                        <button onClick={() => setEditingArticle(a)} className="flex-1 bg-slate-50 dark:bg-slate-800 py-3 rounded-xl text-xs font-black hover:bg-emerald-50 transition-colors">تعديل</button>
+                        <button onClick={() => deleteArticle(a.id)} className="bg-red-50 dark:bg-red-500/10 text-red-500 p-3 rounded-xl hover:bg-red-500 hover:text-white transition-colors">🗑️</button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
+          ) : (
+            <div className="max-w-2xl mx-auto space-y-8 animate-slide-in">
+              <h2 className="text-2xl font-black dark:text-white">إعدادات الموقع المتقدمة</h2>
+              
+              <div className="bg-white dark:bg-slate-900 p-10 rounded-[40px] border dark:border-slate-800 shadow-xl">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center text-white shadow-lg">💰</div>
+                  <div>
+                    <h3 className="font-black dark:text-white">Google AdSense</h3>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">إدارة الأرباح والإعلانات</p>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                    <span className="font-bold text-sm dark:text-white">تفعيل الإعلانات على الموقع</span>
+                    <button 
+                      onClick={() => setIsAdsEnabled(!isAdsEnabled)}
+                      className={`w-14 h-8 rounded-full transition-all relative ${isAdsEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                    >
+                      <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all ${isAdsEnabled ? 'right-7' : 'right-1'}`} />
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 mr-2 uppercase">AdSense Publisher ID</label>
+                    <input 
+                      className="w-full border-2 border-slate-100 dark:border-slate-800 rounded-2xl p-4 font-black dark:bg-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all"
+                      placeholder="ca-pub-xxxxxxxxxxxxxxxx"
+                      value={adsenseId}
+                      onChange={(e) => setAdsenseId(e.target.value)}
+                    />
+                    <p className="text-[9px] text-slate-500 font-medium px-2 italic">أدخل معرف الناشر الخاص بك من حساب AdSense لتفعيل شفرات الإعلانات التلقائية.</p>
+                  </div>
+
+                  <button 
+                    onClick={saveSettings}
+                    className="w-full bg-slate-900 dark:bg-emerald-600 text-white py-5 rounded-2xl font-black text-lg shadow-xl hover:scale-[1.02] transition-all"
+                  >
+                    حفظ كافة الإعدادات
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-8 rounded-[32px] border border-blue-100 dark:border-blue-800/30">
+                <h4 className="font-black text-blue-900 dark:text-blue-400 mb-2">تلميح تقني 💡</h4>
+                <p className="text-sm text-blue-800/70 dark:text-blue-400/70 leading-relaxed font-medium">عند تفعيل AdSense، سيقوم نظام "عبدو ويب" تلقائياً بحقن الشفرة البرمجية بين المقالات وفي الجوانب لزيادة نسبة النقر إلى الظهور (CTR).</p>
+              </div>
+            </div>
+          )}
         </main>
 
         {editingArticle && (
@@ -169,16 +245,7 @@ const App: React.FC = () => {
             <div className="bg-white dark:bg-slate-900 w-full max-w-3xl rounded-[40px] shadow-2xl overflow-hidden animate-slide-in">
               <div className="p-8 border-b dark:border-slate-800 flex justify-between items-center">
                 <h2 className="text-2xl font-black dark:text-white">تحرير محتوى عبدو ويب</h2>
-                <div className="flex gap-2">
-                  <button 
-                    type="button"
-                    onClick={() => setSelectedArticle(editingArticle)}
-                    className="bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2"
-                  >
-                    👁️ معاينة التغييرات
-                  </button>
-                  <button onClick={() => setEditingArticle(null)} className="text-slate-400 hover:text-white text-2xl">✕</button>
-                </div>
+                <button onClick={() => setEditingArticle(null)} className="text-slate-400 hover:text-white text-2xl">✕</button>
               </div>
               <form onSubmit={handleUpdateArticle} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto no-scrollbar">
                 <div className="grid grid-cols-2 gap-4">
@@ -190,7 +257,7 @@ const App: React.FC = () => {
                 <textarea required className="w-full border-2 border-slate-100 dark:border-slate-800 rounded-2xl p-4 font-medium dark:bg-slate-800 dark:text-white" placeholder="نبذة مختصرة" rows={2} value={editingArticle.excerpt} onChange={e => setEditingArticle({...editingArticle, excerpt: e.target.value})} />
                 <textarea required className="w-full border-2 border-slate-100 dark:border-slate-800 rounded-2xl p-4 font-medium dark:bg-slate-800 dark:text-white" placeholder="محتوى المقال" rows={10} value={editingArticle.content} onChange={e => setEditingArticle({...editingArticle, content: e.target.value})} />
                 <input required className="w-full border-2 border-slate-100 dark:border-slate-800 rounded-2xl p-4 font-bold dark:bg-slate-800 dark:text-white" placeholder="رابط الصورة" value={editingArticle.image} onChange={e => setEditingArticle({...editingArticle, image: e.target.value})} />
-                <button type="submit" className="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black text-lg shadow-xl shadow-emerald-500/20">نشر التحديث</button>
+                <button type="submit" className="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black text-lg">نشر التحديث</button>
               </form>
             </div>
           </div>
@@ -229,6 +296,16 @@ const App: React.FC = () => {
         </div>
       </nav>
 
+      {isAdsEnabled && adsenseId && (
+        <div className="bg-slate-100 dark:bg-slate-900 p-4 text-center border-b dark:border-slate-800">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">إعلان ممول - Google AdSense</p>
+          {/* محاكاة مكان الإعلان */}
+          <div className="h-24 bg-slate-200 dark:bg-slate-800 rounded-xl mt-2 flex items-center justify-center border-2 border-dashed border-slate-300 dark:border-slate-700">
+             <span className="text-xs text-slate-400 font-bold">مكان الإعلان (Pub ID: {adsenseId})</span>
+          </div>
+        </div>
+      )}
+
       <main className="container mx-auto px-6 py-12 lg:py-20 flex-1">
         <div className="flex items-center justify-between mb-12">
           <h2 className="text-3xl lg:text-5xl font-black tracking-tighter dark:text-white">
@@ -251,7 +328,6 @@ const App: React.FC = () => {
 
       <ArticleReader />
 
-      {/* Auth Modal */}
       {showAdminAuth && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/98 backdrop-blur-3xl p-6">
           <div className="bg-white dark:bg-slate-900 p-12 md:p-16 rounded-[60px] w-full max-w-sm text-center">
