@@ -25,7 +25,10 @@ const App: React.FC = () => {
     analyticsId: localStorage.getItem('analytics_id') || '',
     facebookUrl: localStorage.getItem('social_fb') || '',
     whatsappNumber: localStorage.getItem('social_wa') || '',
-    footerText: localStorage.getItem('footer_text') || 'جميع الحقوق محفوظة لمدونة عبدو ويب 2024'
+    footerText: localStorage.getItem('footer_text') || 'جميع الحقوق محفوظة لمدونة عبدو ويب 2024',
+    isMaintenanceMode: localStorage.getItem('maintenance_mode') === 'true',
+    announcementText: localStorage.getItem('announcement_text') || '',
+    isAnnouncementEnabled: localStorage.getItem('announcement_enabled') === 'true'
   });
 
   // Admin States
@@ -60,7 +63,18 @@ const App: React.FC = () => {
     localStorage.setItem('social_fb', settings.facebookUrl);
     localStorage.setItem('social_wa', settings.whatsappNumber);
     localStorage.setItem('footer_text', settings.footerText);
-    alert('✅ تم تحديث إعدادات عبدو ويب بنجاح!');
+    localStorage.setItem('maintenance_mode', String(settings.isMaintenanceMode));
+    localStorage.setItem('announcement_text', settings.announcementText);
+    localStorage.setItem('announcement_enabled', String(settings.isAnnouncementEnabled));
+    alert('✅ تم تحديث إعدادات ونظام عبدو ويب بنجاح!');
+  };
+
+  const handleSystemRefresh = () => {
+    if (window.confirm('هل تريد إعادة مزامنة كافة الملفات وتحديث قاعدة البيانات المحلية؟')) {
+      localStorage.setItem('abdouweb_articles', JSON.stringify(INITIAL_ARTICLES));
+      setArticles(INITIAL_ARTICLES);
+      alert('تم تحديث النظام وإعادة الملفات الأصلية.');
+    }
   };
 
   const filteredArticles = useMemo(() => {
@@ -126,6 +140,40 @@ const App: React.FC = () => {
     )
   );
 
+  // Maintenance View
+  if (settings.isMaintenanceMode && !isAdmin) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#020617] flex items-center justify-center p-6 text-center font-sans" dir="rtl">
+        <div className="max-w-md space-y-8 animate-slide-in">
+          <div className="w-24 h-24 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded-[35px] flex items-center justify-center text-5xl mx-auto shadow-xl">🚧</div>
+          <h1 className="text-4xl font-black dark:text-white tracking-tighter">نحن نطور تجربة {settings.siteName}</h1>
+          <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed">عذراً، الموقع حالياً في وضع الصيانة لتحديث المحتوى والأنظمة البرمجية. سنعود خلال وقت وجيز بجديد التقنية.</p>
+          <div className="pt-8 flex justify-center gap-4">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+          </div>
+          <button onClick={() => setShowAdminAuth(true)} className="opacity-0 cursor-default">Admin</button>
+        </div>
+        {showAdminAuth && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/98 backdrop-blur-3xl p-6">
+            <div className="bg-white dark:bg-slate-900 p-12 md:p-16 rounded-[60px] w-full max-w-sm text-center shadow-2xl">
+              <input 
+                type="password" 
+                className="w-full border-b-4 border-slate-100 dark:border-slate-800 bg-transparent p-4 text-center text-3xl font-black dark:text-white outline-none focus:border-emerald-500 mb-8" 
+                placeholder="••••"
+                value={adminPass}
+                onChange={e => setAdminPass(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && loginAdmin()}
+              />
+              <button onClick={loginAdmin} className="w-full bg-emerald-600 text-white py-5 rounded-[24px] font-black">دخول المشرف</button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (isAdmin) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-[#020617] font-sans text-right flex flex-col transition-colors duration-500" dir="rtl">
@@ -136,7 +184,7 @@ const App: React.FC = () => {
             </div>
             <div>
               <h1 className="text-xl font-black dark:text-white uppercase tracking-tight">{settings.siteName} Admin</h1>
-              <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">إدارة المنصة الشاملة</p>
+              <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">تحكم كامل بالمنصة</p>
             </div>
           </div>
           
@@ -190,8 +238,11 @@ const App: React.FC = () => {
           ) : (
             <div className="max-w-4xl mx-auto space-y-12 animate-slide-in pb-20">
               <div className="flex justify-between items-center">
-                <h2 className="text-3xl font-black dark:text-white">إعدادات المنصة</h2>
-                <button onClick={saveAllSettings} className="bg-emerald-600 text-white px-10 py-4 rounded-[20px] font-black shadow-xl hover:scale-105 transition-all">حفظ الكل</button>
+                <h2 className="text-3xl font-black dark:text-white">إعدادات وتحديثات المنصة</h2>
+                <div className="flex gap-4">
+                  <button onClick={handleSystemRefresh} className="bg-slate-200 dark:bg-slate-800 dark:text-white px-6 py-4 rounded-[20px] font-black text-sm">تحديث النواة 🔄</button>
+                  <button onClick={saveAllSettings} className="bg-emerald-600 text-white px-10 py-4 rounded-[20px] font-black shadow-xl hover:scale-105 transition-all">حفظ التغييرات</button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -209,6 +260,35 @@ const App: React.FC = () => {
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase mr-1">الوصف المختصر</label>
                       <textarea rows={3} className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl font-bold dark:text-white outline-none focus:ring-2 ring-emerald-500" value={settings.siteTagline} onChange={e => setSettings({...settings, siteTagline: e.target.value})} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Maintenance & Announcement */}
+                <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] border dark:border-slate-800 shadow-sm space-y-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-2xl">🔧</span>
+                    <h3 className="font-black dark:text-white">تحديث وتحديث</h3>
+                  </div>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-900/30">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">🚧</span>
+                        <span className="font-black text-sm text-amber-900 dark:text-amber-500">وضع الصيانة الكامل</span>
+                      </div>
+                      <button onClick={() => setSettings({...settings, isMaintenanceMode: !settings.isMaintenanceMode})} className={`w-12 h-6 rounded-full transition-all relative ${settings.isMaintenanceMode ? 'bg-amber-500' : 'bg-slate-300'}`}>
+                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.isMaintenanceMode ? 'right-7' : 'right-1'}`} />
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                         <label className="text-[10px] font-black text-slate-400 uppercase mr-1">شريط الإعلانات العاجلة</label>
+                         <button onClick={() => setSettings({...settings, isAnnouncementEnabled: !settings.isAnnouncementEnabled})} className={`w-10 h-5 rounded-full transition-all relative ${settings.isAnnouncementEnabled ? 'bg-blue-500' : 'bg-slate-300'}`}>
+                           <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${settings.isAnnouncementEnabled ? 'right-5.5' : 'right-0.5'}`} />
+                         </button>
+                      </div>
+                      <input placeholder="اكتب إعلاناً يظهر للجميع..." className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl font-bold dark:text-white outline-none focus:ring-2 ring-blue-500" value={settings.announcementText} onChange={e => setSettings({...settings, announcementText: e.target.value})} />
                     </div>
                   </div>
                 </div>
@@ -247,24 +327,6 @@ const App: React.FC = () => {
                     <input placeholder="ca-pub-XXXXXXXXXXXXXXXX" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl font-bold dark:text-white outline-none focus:ring-2 ring-amber-500" value={settings.adsenseId} onChange={e => setSettings({...settings, adsenseId: e.target.value})} />
                   </div>
                 </div>
-
-                {/* Social Media */}
-                <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] border dark:border-slate-800 shadow-sm space-y-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-2xl">📱</span>
-                    <h3 className="font-black dark:text-white">روابط التواصل</h3>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase mr-1">صفحة فيسبوك</label>
-                      <input placeholder="https://facebook.com/..." className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl font-bold dark:text-white outline-none focus:ring-2 ring-blue-600" value={settings.facebookUrl} onChange={e => setSettings({...settings, facebookUrl: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase mr-1">رقم واتساب</label>
-                      <input placeholder="2126XXXXXXXX" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl font-bold dark:text-white outline-none focus:ring-2 ring-green-500" value={settings.whatsappNumber} onChange={e => setSettings({...settings, whatsappNumber: e.target.value})} />
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           )}
@@ -296,6 +358,11 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col text-right transition-colors duration-500 bg-white dark:bg-[#020617]">
+      {settings.isAnnouncementEnabled && settings.announcementText && (
+        <div className="bg-emerald-600 text-white py-3 px-6 text-center text-sm font-black tracking-tight animate-pulse z-[60]">
+          📣 {settings.announcementText}
+        </div>
+      )}
       <nav className="sticky top-0 z-50 glass-nav border-b dark:border-slate-800 shadow-sm">
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
           <div onClick={handleLogoClick} className="flex items-center gap-3 cursor-pointer group select-none">
@@ -321,7 +388,7 @@ const App: React.FC = () => {
       </nav>
 
       {settings.isAdsEnabled && settings.adsenseId && (
-        <div className="bg-slate-100 dark:bg-slate-900/50 p-4 text-center border-b dark:border-slate-800 animate-pulse">
+        <div className="bg-slate-100 dark:bg-slate-900/50 p-4 text-center border-b dark:border-slate-800">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">إعلان من Google AdSense</p>
           <div className="h-20 bg-white dark:bg-slate-800 rounded-xl mt-2 flex items-center justify-center border border-dashed dark:border-slate-700">
              <span className="text-xs text-slate-400 font-bold italic">هنا تظهر أرباحك ({settings.adsenseId})</span>
