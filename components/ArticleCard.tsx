@@ -11,44 +11,43 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onClick }) => {
   return (
     <div 
       onClick={onClick}
-      className="group cursor-pointer flex flex-col animate-slide-in bg-white dark:bg-[#1E293B] p-3 rounded-[40px] border border-[#E5E0D3] dark:border-white/5 hover:border-[#1B4332] dark:hover:border-emerald-500 transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-900/5 dark:hover:shadow-emerald-500/10"
+      className="group relative cursor-pointer flex flex-col bg-white dark:bg-slate-900/40 rounded-[2.5rem] border border-slate-200 dark:border-white/5 overflow-hidden transition-all duration-500 hover:shadow-[0_20px_50px_-12px_rgba(16,185,129,0.15)] hover:-translate-y-2"
     >
-      <div className="relative aspect-[16/10] rounded-[32px] overflow-hidden mb-6 bg-[#F2EFE6] dark:bg-[#0F172A]">
+      <div className="relative aspect-[16/11] overflow-hidden">
         <img 
           src={article.image} 
           alt={article.title} 
-          className="w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-700"
+          className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
         />
-        <div className="absolute top-4 left-4">
-          <span className="bg-[#1B4332]/90 dark:bg-emerald-500/90 backdrop-blur-md text-[#FCF9F1] px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
+        <div className="absolute top-6 right-6">
+          <span className="bg-white/90 dark:bg-emerald-500/90 backdrop-blur-md text-emerald-900 dark:text-white px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-wider shadow-xl">
             {article.category}
           </span>
         </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1B4332]/40 dark:from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
       </div>
       
-      <div className="px-5 pb-5">
-        <div className="flex items-center gap-3 mb-4 text-[9px] font-black uppercase tracking-[0.2em] text-[#1B4332]/30 dark:text-slate-500">
-          <span className="text-emerald-600 dark:text-emerald-400">جديد</span>
-          <span className="w-1 h-1 bg-emerald-600 dark:bg-emerald-400 rounded-full"></span>
-          <span>{article.date}</span>
-          <span className="w-1 h-1 bg-emerald-600 dark:bg-emerald-400 rounded-full"></span>
-          <span>{article.readTime}</span>
+      <div className="p-8 flex-1 flex flex-col">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+          <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+            {article.date} • {article.readTime}
+          </span>
         </div>
         
-        <h3 className="text-xl md:text-2xl font-black text-[#1B4332] dark:text-white mb-5 leading-tight group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors line-clamp-2 tracking-tight">
+        <h3 className="text-xl md:text-2xl font-extrabold text-slate-900 dark:text-white mb-4 leading-snug group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-2">
           {article.title}
         </h3>
         
-        <p className="text-sm text-[#1B4332]/50 dark:text-slate-400 line-clamp-2 leading-relaxed font-medium mb-6">
+        <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed mb-8 flex-1">
           {article.excerpt}
         </p>
         
-        <div className="mt-auto pt-5 border-t border-[#F2EFE6] dark:border-white/5 flex items-center justify-between">
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#1B4332]/40 dark:text-slate-500 group-hover:text-[#1B4332] dark:group-hover:text-white transition-colors">اقرأ المزيد</span>
-          <div className="w-10 h-10 rounded-full bg-[#FCF9F1] dark:bg-[#0F172A] flex items-center justify-center dark:text-white group-hover:bg-[#1B4332] dark:group-hover:bg-emerald-500 group-hover:text-white transition-all transform group-hover:-rotate-45">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+        <div className="flex items-center justify-between pt-6 border-t border-slate-100 dark:border-white/5">
+          <span className="text-xs font-black text-emerald-600 dark:text-emerald-500 group-hover:underline">اكتشف المزيد</span>
+          <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center transition-all group-hover:bg-emerald-600 group-hover:text-white group-hover:rotate-12">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
             </svg>
           </div>
         </div>
